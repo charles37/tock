@@ -94,6 +94,11 @@ impl TestLauncher {
             4 => unsafe { test::aes_test::run_aes128_cbc(&self.peripherals.ecb, self) },
             5 => unsafe { test::aes_test::run_aes128_ecb(&self.peripherals.ecb, self) },
             6 => unsafe { test::ecdsa_p256_test::run_ecdsa_p256(self) },
+            7 => {
+                kernel::debug!("Traditional tests finished. Running new hardware tests...");
+                test::hardware_tests::run_hardware_tests(&self.peripherals.ecb);
+                kernel::debug!("All tests finished.");
+            }
             _ => kernel::debug!("All tests finished."),
         }
     }
