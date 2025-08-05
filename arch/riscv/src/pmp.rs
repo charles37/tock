@@ -316,9 +316,9 @@ fn region_overlaps(
     !region_range.is_empty()
         && !other_range.is_empty()
         && (region_range.contains(&other_range.start)
-            || region_range.contains(&(other_range.end - 1))
+            || region_range.contains(&(other_range.end.saturating_sub(1)))
             || other_range.contains(&region_range.start)
-            || other_range.contains(&(region_range.end - 1)))
+            || other_range.contains(&(region_range.end.saturating_sub(1))))
 }
 
 #[cfg(test)]
@@ -2264,10 +2264,9 @@ pub mod kernel_protection_mml_epmp {
             }
 
             // Setup complete
-            const DEFAULT_USER_PMPCFG_OCTET: Cell<TORUserPMPCFG> = Cell::new(TORUserPMPCFG::OFF);
             Ok(KernelProtectionMMLEPMP {
                 user_pmp_enabled: Cell::new(false),
-                shadow_user_pmpcfgs: [DEFAULT_USER_PMPCFG_OCTET; MPU_REGIONS],
+                shadow_user_pmpcfgs: [const { Cell::new(TORUserPMPCFG::OFF) }; MPU_REGIONS],
             })
         }
     }
