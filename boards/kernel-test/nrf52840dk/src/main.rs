@@ -130,8 +130,19 @@ pub unsafe fn main() {
     // Initialize test infrastructure
     #[cfg(feature = "kernel_test")]
     {
+        use nrf52840::gpio::Pin;
+        use nrf52840::pinmux::Pinmux;
+        
+        // Configure UART pins
+        let uart_tx = Pinmux::new(Pin::P0_06 as u32);
+        let uart_rx = Pinmux::new(Pin::P0_08 as u32);
+        
         // Simple UART print function for test output
         let uart = nrf52840::uart::Uarte::new(nrf52840::uart::UARTE0_BASE);
+        
+        // Initialize UART with proper pins
+        uart.initialize(uart_tx, uart_rx, None, None);
+        
         let _ = uart.configure(kernel::hil::uart::Parameters {
             baud_rate: 115200,
             stop_bits: kernel::hil::uart::StopBits::One,
