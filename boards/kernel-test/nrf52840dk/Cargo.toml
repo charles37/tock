@@ -15,6 +15,7 @@ cortexm4 = { path = "../../../arch/cortex-m4" }
 components = { path = "../../components" }
 
 [features]
+default = ["kernel_test"]
 kernel_test = []
 
 [profile.dev]
