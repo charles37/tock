@@ -8,7 +8,7 @@ TOCK_ARCH=cortex-m4
 TARGET=thumbv7em-none-eabi
 PLATFORM=nrf52840dk-kernel-test
 
-include ../../../boards/Makefile.common
+include ../../Makefile.common
 
 # Default target builds the kernel
 .PHONY: all
