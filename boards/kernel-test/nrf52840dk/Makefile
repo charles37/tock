@@ -29,7 +29,7 @@ test: target/$(TARGET)/release/$(PLATFORM).bin
 	@echo "Kernel test binary built. Use treadmill to run on hardware."
 
 .PHONY: clean
-clean:
+clean::
 	$(Q)cd ../../.. && cargo clean --package $(PLATFORM)
 
 FORCE:
