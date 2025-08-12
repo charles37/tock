@@ -142,7 +142,6 @@ pub unsafe fn main() {
                 KernelTestRunner::new(tests)
             );
             
-            test_runner.register();
             test_runner.run_all();
         }
     }
