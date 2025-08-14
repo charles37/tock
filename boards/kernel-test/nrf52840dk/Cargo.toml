@@ -11,8 +11,10 @@ nrf52840 = { path = "../../../chips/nrf52840" }
 nrf52_components = { path = "../../nordic/nrf52_components" }
 capsules-core = { path = "../../../capsules/core" }
 capsules-extra = { path = "../../../capsules/extra" }
+capsules-system = { path = "../../../capsules/system" }
 cortexm4 = { path = "../../../arch/cortex-m4" }
 components = { path = "../../components" }
+segger = { path = "../../../chips/segger" }
 
 [features]
 default = ["kernel_test"]
