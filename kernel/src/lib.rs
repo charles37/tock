@@ -125,6 +125,9 @@ pub mod syscall;
 pub mod upcall;
 pub mod utilities;
 
+#[cfg(all(target_os = "none", feature = "kernel_test"))]
+pub mod test;
+
 mod config;
 mod kernel;
 mod memop;
