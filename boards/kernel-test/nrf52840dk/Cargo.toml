@@ -1,0 +1,31 @@
+[package]
+name = "nrf52840dk-kernel-test"
+version = "0.1.0"
+authors = ["Tock Project Developers <tock-dev@googlegroups.com>"]
+build = "build.rs"
+edition = "2021"
+
+[dependencies]
+kernel = { path = "../../../kernel", features = ["kernel_test"] }
+nrf52840 = { path = "../../../chips/nrf52840" }
+nrf52_components = { path = "../../nordic/nrf52_components" }
+capsules-core = { path = "../../../capsules/core" }
+capsules-extra = { path = "../../../capsules/extra" }
+cortexm4 = { path = "../../../arch/cortex-m4" }
+components = { path = "../../components" }
+
+[features]
+kernel_test = []
+
+[profile.dev]
+panic = "abort"
+lto = false
+opt-level = "z"
+debug = true
+
+[profile.release]
+panic = "abort"
+lto = true
+opt-level = "z"
+debug = true
+codegen-units = 1
