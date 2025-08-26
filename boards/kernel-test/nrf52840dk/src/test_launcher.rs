@@ -3,6 +3,7 @@
 use capsules_core::test::capsule_test::{CapsuleTestClient, CapsuleTestError};
 use core::cell::Cell;
 use kernel::debug;
+use kernel::deferred_call::{DeferredCall, DeferredCallClient};
 use kernel::utilities::cells::NumericCellExt;
 
 /// Test launcher that runs kernel tests sequentially
