@@ -3,18 +3,15 @@
 // Copyright Tock Contributors 2022.
 
 use std::env;
-use std::path::Path;
+use std::path::PathBuf;
 
 fn main() {
-    let target = env::var("TARGET").unwrap();
+    // Get the directory containing the build script
+    let dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     
-    if target.starts_with("thumbv7em-none-eabi") {
-        let out_dir = env::var("OUT_DIR").unwrap();
-        let out_path = Path::new(&out_dir);
-        
-        // Use the standard nrf52840 layout and configuration
-        println!("cargo:rustc-link-search=native={}", out_path.display());
-        println!("cargo:rerun-if-changed=layout.ld");
-        println!("cargo:rerun-if-changed=../../../boards/nordic/nrf52840dk/layout.ld");
-    }
+    // Tell the linker where to find the layout files
+    println!("cargo:rustc-link-search={}", dir.display());
+    println!("cargo:rustc-link-search={}", dir.join("../../build_scripts").display());
+    println!("cargo:rustc-link-arg=-Tlayout.ld");
+    println!("cargo:rerun-if-changed=layout.ld");
 }
