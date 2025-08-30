@@ -19,6 +19,10 @@ use nrf52840::interrupt_service::Nrf52840DefaultPeripherals;
 // Number of concurrent processes this platform supports.
 const NUM_PROCS: usize = 0; // No user processes for kernel tests
 
+/// Dummy buffer that causes the linker to reserve enough space for the stack.
+#[no_mangle]
+#[link_section = ".stack_buffer"]
+static mut STACK_MEMORY: [u8; 0x2000] = [0; 0x2000];
 
 /// Dummy platform that provides the minimal syscall interface
 pub struct Platform {
