@@ -151,6 +151,7 @@ pub unsafe fn main() {
             width: kernel::hil::uart::Width::Eight,
         });
         
+        
         // Helper to print strings to UART
         let print_str = |s: &str| {
             for &c in s.as_bytes() {
@@ -161,6 +162,10 @@ pub unsafe fn main() {
         
         print_str("\r\n[TEST] Starting kernel test suite\r\n");
         
+        // Small delay to ensure output is sent
+        for _ in 0..100000 {
+            cortexm4::support::nop();
+        }
         
         // Get all registered tests
         let tests = kernel::test::runner::get_kernel_tests();
@@ -188,6 +193,11 @@ pub unsafe fn main() {
                 }
             }
             print_str(" tests\r\n");
+            
+            // Small delay between messages
+            for _ in 0..100000 {
+                cortexm4::support::nop();
+            }
             
             // For now, just print completion
             print_str("[TEST] Test suite complete: 0 passed, 0 failed\r\n");
