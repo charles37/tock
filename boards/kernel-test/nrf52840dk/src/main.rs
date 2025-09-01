@@ -158,6 +158,10 @@ pub unsafe fn main() {
                 uart.send_byte(c);
                 while !uart.tx_ready() {}
             }
+            // Extra wait to ensure last byte is fully transmitted
+            for _ in 0..10000 {
+                cortexm4::support::nop();
+            }
         };
         
         print_str("\r\n[TEST] Starting kernel test suite\r\n");
@@ -202,19 +206,23 @@ pub unsafe fn main() {
             // For now, just print completion
             print_str("[TEST] Test suite complete: 0 passed, 0 failed\r\n");
         }
+        
+        // For kernel tests, we don't want to enter the kernel loop
+        // Just spin forever
+        loop {
+            cortexm4::support::nop();
+        }
     }
     
     #[cfg(not(feature = "kernel_test"))]
     {
-        // Kernel test feature not enabled
+        // Normal kernel operation - start the kernel loop
+        board_kernel.kernel_loop(
+            platform,
+            chip,
+            None::<&kernel::ipc::IPC<0>>,
+            &main_loop_capability,
+        );
     }
-    
-    // Start the kernel
-    board_kernel.kernel_loop(
-        platform,
-        chip,
-        None::<&kernel::ipc::IPC<0>>,
-        &main_loop_capability,
-    );
 }
 
