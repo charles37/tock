@@ -8,13 +8,23 @@
 #![deny(missing_docs)]
 
 mod io;
+mod test_launcher;
 
 use kernel::component::Component;
-use kernel::hil::uart::Configure;
+use kernel::hil::time::Counter;
 use kernel::platform::{KernelResources, SyscallDriverLookup};
 use kernel::scheduler::round_robin::RoundRobinSched;
 use kernel::{capabilities, create_capability, static_init};
+use nrf52840::gpio::Pin;
 use nrf52840::interrupt_service::Nrf52840DefaultPeripherals;
+use nrf52_components::{UartChannel, UartPins};
+use test_launcher::TestLauncher;
+
+// UART pin configuration
+const UART_RTS: Option<Pin> = Some(Pin::P0_05);
+const UART_TXD: Pin = Pin::P0_06;
+const UART_CTS: Option<Pin> = Some(Pin::P0_07);
+const UART_RXD: Pin = Pin::P0_08;
 
 // Number of concurrent processes this platform supports.
 const NUM_PROCS: usize = 0; // No user processes for kernel tests
@@ -127,91 +137,53 @@ pub unsafe fn main() {
     let systick = cortexm4::systick::SysTick::new();
     let platform = static_init!(Platform, Platform { scheduler, systick });
 
+    // Set up timer for UART
+    let rtc = &nrf52840_peripherals.nrf52.rtc;
+    let _ = rtc.start();
+    let mux_alarm = components::alarm::AlarmMuxComponent::new(rtc)
+        .finalize(components::alarm_mux_component_static!(nrf52840::rtc::Rtc));
+
+    // Set up UART channel
+    let uart_channel = nrf52_components::UartChannelComponent::new(
+        UartChannel::Pins(UartPins::new(UART_RTS, UART_TXD, UART_CTS, UART_RXD)),
+        mux_alarm,
+        &nrf52840_peripherals.nrf52.uarte0,
+    )
+    .finalize(nrf52_components::uart_channel_component_static!(
+        nrf52840::rtc::Rtc
+    ));
+
+    // Create UART mux for multiplexing UART
+    let uart_mux = components::console::UartMuxComponent::new(uart_channel, 115200)
+        .finalize(components::uart_mux_component_static!());
+
+    // Create the debugger object that handles calls to `debug!()`
+    components::debug_writer::DebugWriterComponent::new(
+        uart_mux,
+        create_capability!(capabilities::SetDebugWriterCapability),
+    )
+    .finalize(components::debug_writer_component_static!());
+    
     // Initialize test infrastructure
     #[cfg(feature = "kernel_test")]
     {
-        use nrf52840::gpio::Pin;
-        use nrf52840::pinmux::Pinmux;
         
-        // Configure UART pins
-        let uart_tx = Pinmux::new(Pin::P0_06 as u32);
-        let uart_rx = Pinmux::new(Pin::P0_08 as u32);
+        // Create test launcher
+        let test_launcher = static_init!(
+            TestLauncher,
+            TestLauncher::new()
+        );
         
-        // Simple UART print function for test output
-        let uart = nrf52840::uart::Uarte::new(nrf52840::uart::UARTE0_BASE);
+        // Start tests before entering kernel loop
+        test_launcher.start();
         
-        // Initialize UART with proper pins
-        uart.initialize(uart_tx, uart_rx, None, None);
-        
-        let _ = uart.configure(kernel::hil::uart::Parameters {
-            baud_rate: 115200,
-            stop_bits: kernel::hil::uart::StopBits::One,
-            parity: kernel::hil::uart::Parity::None,
-            hw_flow_control: false,
-            width: kernel::hil::uart::Width::Eight,
-        });
-        
-        
-        // Helper to print strings to UART
-        let print_str = |s: &str| {
-            for &c in s.as_bytes() {
-                uart.send_byte(c);
-                while !uart.tx_ready() {}
-            }
-            // Extra wait to ensure last byte is fully transmitted
-            for _ in 0..10000 {
-                cortexm4::support::nop();
-            }
-        };
-        
-        print_str("\r\n[TEST] Starting kernel test suite\r\n");
-        
-        // Small delay to ensure output is sent
-        for _ in 0..100000 {
-            cortexm4::support::nop();
-        }
-        
-        // Get all registered tests
-        let tests = kernel::test::runner::get_kernel_tests();
-        
-        if tests.is_empty() {
-            print_str("[TEST] No kernel tests found!\r\n");
-        } else {
-            print_str("[TEST] Running ");
-            // Simple number printing
-            let mut n = tests.len();
-            let mut digits = [0u8; 10];
-            let mut i = 0;
-            if n == 0 {
-                print_str("0");
-            } else {
-                while n > 0 {
-                    digits[i] = (n % 10) as u8 + b'0';
-                    n /= 10;
-                    i += 1;
-                }
-                while i > 0 {
-                    i -= 1;
-                    uart.send_byte(digits[i]);
-                    while !uart.tx_ready() {}
-                }
-            }
-            print_str(" tests\r\n");
-            
-            // Small delay between messages
-            for _ in 0..100000 {
-                cortexm4::support::nop();
-            }
-            
-            // For now, just print completion
-            print_str("[TEST] Test suite complete: 0 passed, 0 failed\r\n");
-        }
-        
-        // For kernel tests, we don't want to enter the kernel loop
-        // Just spin forever
-        loop {
-            cortexm4::support::nop();
-        }
+        // Start the kernel loop which will handle test execution
+        board_kernel.kernel_loop(
+            platform,
+            chip,
+            None::<&kernel::ipc::IPC<0>>,
+            &main_loop_capability,
+        );
     }
     
     #[cfg(not(feature = "kernel_test"))]
