@@ -9,6 +9,7 @@
 
 mod io;
 mod test_launcher;
+mod simple_test;
 
 use kernel::component::Component;
 use kernel::hil::time::Counter;
@@ -167,6 +168,16 @@ pub unsafe fn main() {
     // Initialize test infrastructure
     #[cfg(feature = "kernel_test")]
     {
+        // Add a small delay to ensure UART is ready
+        for _ in 0..1000000 {
+            cortexm4::support::nop();
+        }
+        
+        // Run simple test first
+        simple_test::run_simple_test();
+        
+        // Output a simple test message directly
+        kernel::debug!("=== NRF52840DK Kernel Test Starting ===");
         
         // Create test launcher
         let test_launcher = static_init!(
