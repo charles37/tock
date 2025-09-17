@@ -58,23 +58,28 @@ impl TestOutput {
     }
     
     pub fn test_pass(name: &str) {
-        crate::debug!("[PASS] {}", name);
+        // Output format that CI expects
+        crate::debug!("[TEST] {} - PASSED", name);
     }
     
     pub fn test_fail(name: &str, msg: &[u8]) {
         // Convert bytes to string for debug macro
         if let Ok(msg_str) = core::str::from_utf8(msg) {
-            crate::debug!("[FAIL] {}: {}", name, msg_str);
+            crate::debug!("[TEST] {} - FAILED: {}", name, msg_str);
         } else {
-            crate::debug!("[FAIL] {}: (invalid UTF-8)", name);
+            crate::debug!("[TEST] {} - FAILED: (invalid UTF-8)", name);
         }
     }
     
     pub fn suite_start(count: usize) {
-        crate::debug!("[TEST] Starting kernel test suite ({} tests)", count);
+        crate::debug!("[TEST] Starting kernel test suite");
+        crate::debug!("[TEST] Total tests to run: {}", count);
     }
     
     pub fn suite_complete(passed: usize, failed: usize) {
-        crate::debug!("[TEST] Test suite complete: {} passed, {} failed", passed, failed);
+        let total = passed + failed;
+        crate::debug!("[TEST] Test suite complete: {} tests run", total);
+        crate::debug!("[TEST] {} passed, {} failed", passed, failed);
+        crate::debug!("[TEST] All tests completed");
     }
 }

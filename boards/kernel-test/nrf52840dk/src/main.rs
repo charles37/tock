@@ -8,10 +8,10 @@
 #![deny(missing_docs)]
 
 mod io;
-mod test_launcher;
 mod simple_test;
 
 use kernel::component::Component;
+use kernel::deferred_call::DeferredCallClient;
 use kernel::hil::time::Counter;
 use kernel::platform::{KernelResources, SyscallDriverLookup};
 use kernel::scheduler::round_robin::RoundRobinSched;
@@ -19,7 +19,6 @@ use kernel::{capabilities, create_capability, static_init};
 use nrf52840::gpio::Pin;
 use nrf52840::interrupt_service::Nrf52840DefaultPeripherals;
 use nrf52_components::{UartChannel, UartPins};
-use test_launcher::TestLauncher;
 
 // UART pin configuration
 const UART_RTS: Option<Pin> = Some(Pin::P0_05);
@@ -179,16 +178,20 @@ pub unsafe fn main() {
         // Output a simple test message directly
         kernel::debug!("=== NRF52840DK Kernel Test Starting ===");
         
-        // Create test launcher
-        let test_launcher = static_init!(
-            TestLauncher,
-            TestLauncher::new()
+        // Get the kernel tests and create test runner
+        let tests = kernel::test::runner::get_kernel_tests();
+        let test_runner = static_init!(
+            kernel::test::KernelTestRunner,
+            kernel::test::KernelTestRunner::new(tests)
         );
         
-        // Start tests before entering kernel loop
-        test_launcher.start();
+        // Register the test runner with deferred call system
+        test_runner.register();
         
-        // Start the kernel loop which will handle test execution
+        // Start running all tests
+        test_runner.run_all();
+        
+        // Start the kernel loop which will handle test execution via deferred calls
         board_kernel.kernel_loop(
             platform,
             chip,
